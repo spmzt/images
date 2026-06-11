@@ -1,0 +1,4 @@
+FROM ghcr.io/appjail-makejails/python:15.0-311
+RUN pkg install -y FreeBSD-utilities \
+    py311-pip py311-setuptools py311-wheel py311-cryptography && \
+    pkg clean -ay
