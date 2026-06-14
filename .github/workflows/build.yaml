@@ -61,11 +61,21 @@ jobs:
           run: |
             set -e
 
-            fetch https://download.freebsd.org/snapshots/OCI-IMAGES/16.0-CURRENT/amd64/Latest/FreeBSD-16.0-CURRENT-amd64-container-image-runtime.txz
-            BASE_IMAGE=$(podman load --input FreeBSD-16.0-CURRENT-amd64-container-image-runtime.txz | sed -e 's/Loaded image: //g')
-            buildah tag ${BASE_IMAGE} ${REGISTRY}/${USERNAME}/freebsd-base:`date -I`
-            buildah tag ${BASE_IMAGE} ${REGISTRY}/${USERNAME}/freebsd-base:latest
-            # push
-            buildah push ${REGISTRY}/${USERNAME}/freebsd-base:`date -I`
-            buildah push ${REGISTRY}/${USERNAME}/freebsd-base:latest
-            ls
+            fetch https://download.freebsd.org/snapshots/OCI-IMAGES/16.0-CURRENT/amd64/Latest/FreeBSD-16.0-CURRENT-amd64-container-image-notoolchain.txz
+            BASE_IMAGE=$(podman load --input FreeBSD-16.0-CURRENT-amd64-container-image-notoolchain.txz | sed -e 's/Loaded image: //g')
+
+            IMAGE_PREFIX="${REGISTRY}/${USERNAME}/freebsd"
+            buildah tag ${BASE_IMAGE} ${IMAGE_PREFIX}-base:`date -I`
+            buildah tag ${BASE_IMAGE} ${IMAGE_PREFIX}-base:latest
+            buildah push ${IMAGE_PREFIX}-base:`date -I` ${IMAGE_PREFIX}-base:latest
+
+            # XXX: Builds below should be in a Makefile
+            cd python
+            buildah build --layers --network=host -t ${IMAGE_PREFIX}-py311:`date -I` -t ${IMAGE_PREFIX}-py311:latest
+            buildah push ${IMAGE_PREFIX}-py311:`date -I` ${IMAGE_PREFIX}-py311:latest
+            cd ..
+
+            cd golang
+            buildah build --layers --network=host -t ${REGISTRY}/${USERNAME}/freebsd-go:`date -I` -t ${REGISTRY}/${USERNAME}/freebsd-go:latest
+            buildah push ${IMAGE_PREFIX}-go:`date -I` ${IMAGE_PREFIX}-go:latest
+            cd ..
