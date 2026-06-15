@@ -32,6 +32,7 @@ podman pull ghcr.io/spmzt/freebsd-golang:latest
 podman pull ghcr.io/spmzt/freebsd-node20:latest
 podman pull ghcr.io/spmzt/freebsd-node22:latest
 podman pull ghcr.io/spmzt/freebsd-node24:latest
+podman pull ghcr.io/spmzt/freebsd-node26:latest
 ```
 
 ## NGINX Image

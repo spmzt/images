@@ -1,0 +1,9 @@
+ARG OWNER=spmzt
+ARG REPO=images
+
+FROM ghcr.io/spmzt/freebsd-baseutils:latest
+ARG OWNER
+ARG REPO
+LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
+RUN pkg install -y node26 npm-node26 && \
+    pkg clean -ay
