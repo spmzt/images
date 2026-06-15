@@ -1,7 +1,7 @@
 ## FreeBSD base image
 
 ```
-podman pull FROM ghcr.io/spmzt/freebsd-base:latest
+podman pull ghcr.io/spmzt/freebsd-base:latest
 ```
 
 * NOTE: I'm using notoolchain version which is big in size but contains most of the tools I usually need
@@ -9,13 +9,13 @@ podman pull FROM ghcr.io/spmzt/freebsd-base:latest
 ## Python Image
 
 ```
-podman pull FROM ghcr.io/spmzt/freebsd-py311:latest
+podman pull ghcr.io/spmzt/freebsd-py311:latest
 ```
 
 * NOTE: wheel, setuptools, cryptography are installed
 
-## Golang
+## Golang Image
 
 ```
-podman pull FROM ghcr.io/spmzt/freebsd-go:latest
+podman pull ghcr.io/spmzt/freebsd-go:latest
 ```
