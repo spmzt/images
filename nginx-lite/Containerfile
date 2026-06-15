@@ -5,5 +5,5 @@ FROM ghcr.io/spmzt/freebsd-baseutils:latest
 ARG OWNER
 ARG REPO
 LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
-RUN pkg install -y go && \
+RUN pkg install -y nginx-lite && \
     pkg clean -ay
