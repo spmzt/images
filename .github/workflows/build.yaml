@@ -32,24 +32,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Download pre-build artifact
-        if: inputs.pre_artifact_name != ''
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ inputs.pre_artifact_name }}
-          path: ${{ inputs.pre_artifact_path }}
-
       - name: build oci image
         uses: vmactions/freebsd-vm@v1.4.6
         env:
           AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.actor }}
           REGISTRY: ghcr.io
+          OS_VER: 16.0-CURRENT
         with:
           usesh: true
           #debug-on-error: true
           #vnc-password: ${{ secrets.VNC_PASSWORD }}
-          envs: "AUTH_TOKEN USERNAME REGISTRY"
+          envs: "AUTH_TOKEN USERNAME REGISTRY OS_VER"
           prepare: |
             pkg install -y podman-suite
             echo "${AUTH_TOKEN}" | buildah login ${REGISTRY} -u ${AUTH_TOKEN} --password-stdin
