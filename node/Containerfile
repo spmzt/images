@@ -1,0 +1,4 @@
+FROM ghcr.io/spmzt/freebsd-base:latest
+RUN pkg install -y FreeBSD-utilities \
+    node20 npm-node20 && \
+    pkg clean -ay
