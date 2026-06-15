@@ -79,3 +79,8 @@ jobs:
             buildah build --layers --network=host -t ${REGISTRY}/${USERNAME}/freebsd-go:`date -I` -t ${REGISTRY}/${USERNAME}/freebsd-go:latest
             buildah push ${IMAGE_PREFIX}-go:`date -I` ${IMAGE_PREFIX}-go:latest
             cd ..
+
+            cd node
+            buildah build --layers --network=host -t ${REGISTRY}/${USERNAME}/freebsd-node20:`date -I` -t ${REGISTRY}/${USERNAME}/freebsd-node20:latest
+            buildah push ${IMAGE_PREFIX}-node20:`date -I` ${IMAGE_PREFIX}-node20:latest
+            cd ..
