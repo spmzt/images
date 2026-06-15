@@ -1,0 +1,7 @@
+*.core
+*.orig
+*.txz
+*.rej
+*.sw[nop]
+*~
+.env
