@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -xeuo pipefail
+set -euo pipefail
 
 : "${BASE_TYPE:=notoolchain}"
 : "${ARCH:=$(uname -p)}"

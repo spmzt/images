@@ -7,3 +7,6 @@ ARG REPO
 LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
 RUN pkg install -y nginx && \
     pkg clean -ay
+RUN sed -i'' -e '$s|^\}$|    include /usr/local/etc/nginx/conf.d/*.conf;\n}|g' \
+    /usr/local/etc/nginx/nginx.conf
+EXPOSE 80
