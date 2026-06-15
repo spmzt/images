@@ -47,4 +47,6 @@ jobs:
           prepare: |
             pkg install -y podman-suite
             echo "${AUTH_TOKEN}" | buildah login ${REGISTRY} -u ${AUTH_TOKEN} --password-stdin
-          run: ./make.sh -d
+          run: |
+            ./make.sh -dm baseutils
+            ./make.sh

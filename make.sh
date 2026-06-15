@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -euo pipefail
+set -xeuo pipefail
 
 : "${BASE_TYPE:=notoolchain}"
 : "${ARCH:=$(uname -p)}"
@@ -50,7 +50,12 @@ build_oci_image()
 {
 	local image_tag images
 
-	images=$(find . -name 'Containerfile' -printf '%h\n' | sed -e 's/\.\///g')
+	# Here
+	if [ "$#" = 0 ]; then
+		images=$(find . -name 'Containerfile' -printf '%h\n' | sed -e 's/\.\///g')
+	else
+		images="$1"
+	fi
 	for img in ${images};
 	do
 		image_tag=${IMAGE_PREFIX}-${img}
@@ -62,36 +67,50 @@ build_oci_image()
 
 main()
 {
-	while getopts "dit:" flag
+	local dflag iflag tflag mflag
+
+	dflag=false
+	iflag=false
+	tflag=false
+	mflag=false
+
+	while getopts "dit:m:" flag
 	do
-		case "${flag}" in
-		d)
-			dflag=1
-			;;
-		i)
-			iflag=1
-			;;
+		case $flag in
+		d) dflag=true ;;
+		i) iflag=true ;;
 		t)
-			tflag=1
+			tflag=true
 			OCI_LABEL="$OPTARG"
 			;;
-		*)
-			printf "Usage: %s: [-di] [-t tag]\n" $0
+		m)
+			mflag=true
+			IMAGE="$OPTARG"
+			;;
+		\?)
+			printf "Usage: %s: [-di] [-t tag] [-m image]\n" $0
 			exit 2
 			;;
+		:)
+			printf "Option -%s requires an argument.\n" $OPTARG
+			exit 2
 		esac
 	done
 	shift $(($OPTIND - 1))
 
-	if [ ! -z "dflag" ]; then
+	if [ "$dflag" = true ]; then
 		fetch_base
 	fi
-	if [ ! -z "iflag" ]; then
+	if [ "$iflag" = true ]; then
 		install_depends
 	fi
 
 	build_base_image
-	build_oci_image
+	if [ "$mflag" = true ]; then
+		build_oci_image $IMAGE
+	else
+		build_oci_image
+	fi
 }
 
-main
+main "$@"

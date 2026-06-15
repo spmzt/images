@@ -1,6 +1,6 @@
 ARG OWNER=spmzt
 ARG REPO=images
-FROM ghcr.io/spmzt/freebsd-baseutils:latest
+FROM ghcr.io/spmzt/freebsd-base:latest
 LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
 RUN pkg install -y FreeBSD-utilities && \
     pkg clean -ay
