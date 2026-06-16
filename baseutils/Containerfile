@@ -1,9 +1,7 @@
-ARG OWNER=spmzt
-ARG REPO=images
-
 FROM ghcr.io/spmzt/freebsd-base:latest
-ARG OWNER
-ARG REPO
-LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
+LABEL org.opencontainers.image.source https://github.com/spmzt/images \
+    org.opencontainers.image.title="FreeBSD Baseutils" \
+    org.opencontainers.image.description="FreeBSD notoolchain image with FreeBSD-utilities" \
+    org.opencontainers.image.authors="spmzt"
 RUN pkg install -y FreeBSD-utilities && \
     pkg clean -ay

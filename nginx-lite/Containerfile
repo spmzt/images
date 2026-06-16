@@ -1,10 +1,8 @@
-ARG OWNER=spmzt
-ARG REPO=images
-
 FROM ghcr.io/spmzt/freebsd-baseutils:latest
-ARG OWNER
-ARG REPO
-LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
+LABEL org.opencontainers.image.source https://github.com/spmzt/images \
+    org.opencontainers.image.title="FreeBSD nginx-lite" \
+    org.opencontainers.image.description="FreeBSD nginx-lite image" \
+    org.opencontainers.image.authors="spmzt"
 RUN pkg install -y nginx-lite && \
     pkg clean -ay
 RUN sed -i'' -e '$s|^\}$|    include /usr/local/etc/nginx/conf.d/*.conf;\n}|g' \

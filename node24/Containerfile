@@ -1,9 +1,7 @@
-ARG OWNER=spmzt
-ARG REPO=images
-
 FROM ghcr.io/spmzt/freebsd-baseutils:latest
-ARG OWNER
-ARG REPO
-LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
+LABEL org.opencontainers.image.source https://github.com/spmzt/images \
+    org.opencontainers.image.title="FreeBSD Node 24" \
+    org.opencontainers.image.description="FreeBSD node 24 image" \
+    org.opencontainers.image.authors="spmzt"
 RUN pkg install -y node24 npm-node24 && \
     pkg clean -ay

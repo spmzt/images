@@ -1,10 +1,8 @@
-ARG OWNER=spmzt
-ARG REPO=images
-
 FROM ghcr.io/spmzt/freebsd-baseutils:latest
-ARG OWNER
-ARG REPO
-LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
+LABEL org.opencontainers.image.source https://github.com/spmzt/images \
+    org.opencontainers.image.title="FreeBSD Python 3.11" \
+    org.opencontainers.image.description="FreeBSD Python 3.11 image with pip, wheel, and setuptools" \
+    org.opencontainers.image.authors="spmzt"
 RUN pkg install -y py311-pip py311-setuptools \
     py311-wheel py311-cryptography && \
     pkg clean -ay

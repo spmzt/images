@@ -1,0 +1,12 @@
+FROM ghcr.io/spmzt/freebsd-baseutils:latest
+LABEL org.opencontainers.image.source https://github.com/spmzt/images \
+    org.opencontainers.image.title="FreeBSD PostgreSQL 18" \
+    org.opencontainers.image.description="FreeBSD PostgreSQL18 image" \
+    org.opencontainers.image.authors="spmzt"
+RUN pkg install -y postgresql18-server postgresql18-client && \
+    pkg clean -ay
+RUN service postgresql enable
+VOLUME /var/db/postgres
+STOPSIGNAL SIGINT
+EXPOSE 5432
+CMD ["postgres"]
