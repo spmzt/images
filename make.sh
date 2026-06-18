@@ -46,17 +46,25 @@ build_base_image()
 	buildah tag ${base_image} ${IMAGE_PREFIX}-base:latest
 }
 
+pull_oci_image()
+{
+	local image_tag
+
+	# Pull it first for cache
+	for img in $1;
+	do
+		image_tag=${IMAGE_PREFIX}-${img}
+		buildah pull $image_tag
+	done
+}
+
+
 build_oci_image()
 {
-	local image_tag images
+	local image_tag
 
-	# Here
-	if [ "$#" = 0 ]; then
-		images=$(find . -name 'Containerfile' -printf '%h\n' | sed -e 's/\.\///g')
-	else
-		images="$1"
-	fi
-	for img in ${images};
+	# Pull it first for cache
+	for img in $1;
 	do
 		image_tag=${IMAGE_PREFIX}-${img}
 		buildah build -f ${img}/Containerfile ${BUDFLAGS} \
@@ -67,18 +75,20 @@ build_oci_image()
 
 main()
 {
-	local dflag iflag tflag mflag
+	local dflag iflag tflag mflag pflag
 
 	dflag=false
 	iflag=false
 	tflag=false
 	mflag=false
+	pflag=false
 
-	while getopts "dit:m:" flag
+	while getopts "dipt:m:" flag
 	do
 		case $flag in
 		d) dflag=true ;;
 		i) iflag=true ;;
+		p) pflag=true ;;
 		t)
 			tflag=true
 			OCI_LABEL="$OPTARG"
@@ -88,7 +98,10 @@ main()
 			IMAGE="$OPTARG"
 			;;
 		\?)
-			printf "Usage: %s: [-di] [-t tag] [-m image]\n" $0
+			printf "Usage: %s: [-dip] [-t tag] [-m image]\n" $0
+			printf "\t-d: Download base image first\n"
+			printf "\t-i: Install dependencies\n"
+			printf "\t-p: Pull images first\n"
 			exit 2
 			;;
 		:)
@@ -106,11 +119,14 @@ main()
 	fi
 
 	build_base_image
-	if [ "$mflag" = true ]; then
-		build_oci_image $IMAGE
-	else
-		build_oci_image
+	if [ "$mflag" = false ]; then
+		IMAGE=$(find . -name 'Containerfile' -printf '%h\n' | sed -e 's/\.\///g')
 	fi
+
+	if [ "$pflag" = true ]; then
+		pull_oci_image $IMAGE
+	fi
+	build_oci_image $IMAGE
 }
 
 main "$@"
