@@ -54,6 +54,7 @@ pull_oci_image()
 	for img in $1;
 	do
 		image_tag=${IMAGE_PREFIX}-${img}
+		printf "Pull: %s\n" $image_tag
 		buildah pull $image_tag
 	done
 }
@@ -67,6 +68,7 @@ build_oci_image()
 	for img in $1;
 	do
 		image_tag=${IMAGE_PREFIX}-${img}
+		printf "Build: %s\n" $image_tag
 		buildah build -f ${img}/Containerfile ${BUDFLAGS} \
 		    -t ${image_tag}:latest -t ${image_tag}:${OCI_LABEL}
 		buildah push ${image_tag}:${OCI_LABEL} ${image_tag}:latest
@@ -120,13 +122,13 @@ main()
 
 	build_base_image
 	if [ "$mflag" = false ]; then
-		IMAGE=$(find . -name 'Containerfile' -printf '%h\n' | sed -e 's/\.\///g')
+		IMAGE="$(find . -name 'Containerfile' -printf '%h\n' | sed -e 's/\.\///g')"
 	fi
 
 	if [ "$pflag" = true ]; then
-		pull_oci_image $IMAGE
+		pull_oci_image "$IMAGE"
 	fi
-	build_oci_image $IMAGE
+	build_oci_image "$IMAGE"
 }
 
 main "$@"

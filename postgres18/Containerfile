@@ -8,6 +8,8 @@ RUN pkg install -y postgresql18-server postgresql18-client && \
     pkg clean -ay
 RUN service postgresql enable
 VOLUME /var/db/postgres
+USER postgres
+WORKDIR /var/db/postgres
 STOPSIGNAL SIGINT
 EXPOSE 5432
-CMD ["postgres"]
+CMD ["/sbin/init"]
