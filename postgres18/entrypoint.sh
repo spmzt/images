@@ -18,7 +18,8 @@ if [ ! -s "${PGDATA}/PG_VERSION" ]; then
 	    --auth-local=trust --auth-host=scram-sha-256
 	rm -f "${pwfile}"
 
-	printf "listen_addresses = '*'\n" >> "${PGDATA}/postgresql.conf"
+	printf "listen_addresses = '*'\nlog_destination = 'stderr'\n" \
+	    >> "${PGDATA}/postgresql.conf"
 	printf "host all all all scram-sha-256\n" >> "${PGDATA}/pg_hba.conf"
 fi
 

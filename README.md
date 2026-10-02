@@ -55,8 +55,11 @@ podman pull ghcr.io/spmzt/freebsd-freenginx:latest
 
 ```
 podman run -d -e POSTGRES_PASSWORD=secret -p 5432:5432 \
+    --annotation org.freebsd.jail.allow.sysvipc=true \
     -v pgdata:/var/db/postgres ghcr.io/spmzt/freebsd-postgres18:latest
 ```
 
 * NOTE: The cluster is initialized in `$PGDATA` (`/var/db/postgres/data18`) on first start;
   `POSTGRES_USER` (default `postgres`) sets the superuser name
+* NOTE: The `sysvipc` annotation is required; without it `initdb` fails with
+  `could not create shared memory segment: Function not implemented`
