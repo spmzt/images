@@ -3,6 +3,10 @@ name: FreeBSD OCI Images
 on:
   push:
     branches: [ "main" ]
+  schedule:
+    # Weekly, Mondays at 03:00 UTC
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
   workflow_call:
     inputs:
       image_name:
