@@ -3,6 +3,6 @@ LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
     org.opencontainers.image.title="FreeBSD Baseutils" \
     org.opencontainers.image.description="FreeBSD notoolchain image with FreeBSD-utilities" \
     org.opencontainers.image.authors="spmzt"
+COPY --chmod=0755 baseutils/pkg-cleanup.sh /usr/local/sbin/pkg-cleanup
 RUN pkg install -y FreeBSD-utilities && \
-    pkg clean -ay && \
-    rm -rf /var/db/pkg/repos/*
+    pkg-cleanup

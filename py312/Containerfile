@@ -5,5 +5,4 @@ LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
     org.opencontainers.image.authors="spmzt"
 RUN pkg install -y py312-pip py312-setuptools \
     py312-wheel py312-cryptography && \
-    pkg clean -ay && \
-    rm -rf /var/db/pkg/repos/*
+    pkg-cleanup

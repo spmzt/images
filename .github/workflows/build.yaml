@@ -34,6 +34,7 @@ jobs:
     outputs:
       base: ${{ steps.plan.outputs.base }}
       images: ${{ steps.plan.outputs.images }}
+      day: ${{ steps.plan.outputs.day }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -87,6 +88,7 @@ jobs:
 
           images=$(printf '%s\n' ${images} | jq -R . | jq -sc 'map(select(length > 0))')
           echo "base=${base}" >> "${GITHUB_OUTPUT}"
+          echo "day=$(date -u +%F)" >> "${GITHUB_OUTPUT}"
           echo "images=${images}" >> "${GITHUB_OUTPUT}"
           echo "Build baseutils: ${base}"
           echo "Build images: ${images}"
@@ -108,6 +110,8 @@ jobs:
         with:
           args: -d -m baseutils
           token: ${{ secrets.GITHUB_TOKEN }}
+          cache-name: baseutils
+          cache-day: ${{ needs.plan.outputs.day }}
 
   image:
     name: ${{ matrix.image }}
@@ -136,3 +140,5 @@ jobs:
         with:
           args: -B -m ${{ matrix.image }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          cache-name: ${{ matrix.image }}
+          cache-day: ${{ needs.plan.outputs.day }}

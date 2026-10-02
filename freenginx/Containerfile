@@ -4,8 +4,7 @@ LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
     org.opencontainers.image.description="FreeBSD freenginx image" \
     org.opencontainers.image.authors="spmzt"
 RUN pkg install -y freenginx && \
-    pkg clean -ay && \
-    rm -rf /var/db/pkg/repos/*
+    pkg-cleanup
 RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log
 EXPOSE 80

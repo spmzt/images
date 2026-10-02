@@ -8,6 +8,8 @@ set -euo pipefail
 : "${REGISTRY:=ghcr.io}"
 : "${USERNAME:=spmzt}"
 : "${BUDFLAGS:="--network=host --layers"}"
+# Directory on the build host shared as /var/cache/pkg by every build
+: "${PKG_CACHE:=}"
 
 OS=$(uname -o)
 OCI_IMAGE="${OS}-${OS_VER}-${ARCH}-container-image-${BASE_TYPE}.txz"
@@ -55,6 +57,11 @@ pull_oci_image()
 build_oci_image()
 {
 	local image_tag failed
+
+	if [ -n "$PKG_CACHE" ]; then
+		mkdir -p "$PKG_CACHE"
+		BUDFLAGS="${BUDFLAGS} -v $(realpath "$PKG_CACHE"):/var/cache/pkg"
+	fi
 
 	failed=""
 	for img in $1;

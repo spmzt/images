@@ -4,8 +4,7 @@ LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
     org.opencontainers.image.description="FreeBSD nginx-full image" \
     org.opencontainers.image.authors="spmzt"
 RUN pkg install -y nginx-full && \
-    pkg clean -ay && \
-    rm -rf /var/db/pkg/repos/*
+    pkg-cleanup
 RUN sed -i '' -e '$s|^\}$|    include /usr/local/etc/nginx/conf.d/*.conf;\n}|' \
     /usr/local/etc/nginx/nginx.conf && \
     mkdir -p /usr/local/etc/nginx/conf.d

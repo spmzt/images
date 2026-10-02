@@ -4,5 +4,4 @@ LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
     org.opencontainers.image.description="FreeBSD node 20 image" \
     org.opencontainers.image.authors="spmzt"
 RUN pkg install -y node20 npm-node20 && \
-    pkg clean -ay && \
-    rm -rf /var/db/pkg/repos/*
+    pkg-cleanup

@@ -8,6 +8,12 @@ inputs:
   token:
     description: 'Token used to push to the registry'
     required: true
+  cache-name:
+    description: 'Name of the package cache for this build (e.g., the image)'
+    required: true
+  cache-day:
+    description: 'Day (YYYY-MM-DD) package caches are reused within'
+    required: true
 
 runs:
   using: composite
@@ -24,6 +30,30 @@ runs:
         remove_packages_one_command: true
         rm_cmd: rmz
 
+    # Packages for the VM itself (podman-suite); the same for every job
+    - name: Restore VM package cache
+      id: host-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: .cache/pkg-host
+        key: pkg-host-${{ inputs.cache-day }}
+
+    # Packages installed inside the images; latest cache of the same day
+    - name: Restore image package cache
+      id: build-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: .cache/pkg
+        key: pkg-${{ inputs.cache-name }}-${{ inputs.cache-day }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: pkg-${{ inputs.cache-name }}-${{ inputs.cache-day }}-
+
+    - name: Record package cache state
+      id: before
+      shell: bash
+      run: |
+        mkdir -p .cache/pkg-host .cache/pkg
+        echo "build=$(find .cache/pkg -type f | sort | md5sum)" >> "${GITHUB_OUTPUT}"
+
     - name: build oci image
       uses: vmactions/freebsd-vm@v1.5.8
       env:
@@ -37,7 +67,38 @@ runs:
         #debug-on-error: true
         envs: "AUTH_TOKEN USERNAME REGISTRY OS_VER MAKE_ARGS"
         prepare: |
-          pkg install -y podman-suite
+          env PKG_CACHEDIR="${PWD}/.cache/pkg-host" pkg install -y podman-suite
           echo "${AUTH_TOKEN}" | buildah login ${REGISTRY} -u "${USERNAME}" --password-stdin
+        # Never fail here: the VM only copies the workspace (and the
+        # package cache) back on success, so report the result after.
         run: |
-          ./make.sh ${MAKE_ARGS}
+          rc=0
+          PKG_CACHE=.cache/pkg ./make.sh ${MAKE_ARGS} || rc=$?
+          echo "${rc}" > .make-status
+
+    - name: Save VM package cache
+      if: steps.host-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: .cache/pkg-host
+        key: pkg-host-${{ inputs.cache-day }}
+
+    - name: Check image package cache
+      id: after
+      shell: bash
+      run: |
+        echo "build=$(find .cache/pkg -type f | sort | md5sum)" >> "${GITHUB_OUTPUT}"
+
+    - name: Save image package cache
+      if: steps.after.outputs.build != steps.before.outputs.build
+      uses: actions/cache/save@v6
+      with:
+        path: .cache/pkg
+        key: pkg-${{ inputs.cache-name }}-${{ inputs.cache-day }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+    - name: Check build result
+      shell: bash
+      run: |
+        rc=$(cat .make-status 2>/dev/null || echo 1)
+        echo "make.sh exited with ${rc}"
+        exit "${rc}"
