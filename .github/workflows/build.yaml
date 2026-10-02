@@ -27,47 +27,112 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    permissions:
+      contents: read
+    outputs:
+      base: ${{ steps.plan.outputs.base }}
+      images: ${{ steps.plan.outputs.images }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Select images to build
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_IMAGES: ${{ inputs.image_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          all=$(find . -mindepth 2 -maxdepth 2 -name Containerfile \
+              ! -path './baseutils/*' | cut -d/ -f2 | sort)
+
+          if [ -n "${INPUT_IMAGES}" ]; then
+            base=false
+            images=""
+            for img in ${INPUT_IMAGES}; do
+              if [ ! -f "${img}/Containerfile" ]; then
+                echo "::error::Unknown image: ${img}"
+                exit 1
+              fi
+              if [ "${img}" = baseutils ]; then
+                base=true
+              else
+                images="${images} ${img}"
+              fi
+            done
+          elif [ "${EVENT}" = push ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "${BEFORE}" "${AFTER}")
+            echo "Changed files:"
+            echo "${changed}"
+            if echo "${changed}" | grep -qE '^(make\.sh|\.github/|baseutils/)'; then
+              base=true
+              images=${all}
+            else
+              base=false
+              images=$(echo "${changed}" | grep / | cut -d/ -f1 | sort -u |
+                  while read -r dir; do
+                    [ -f "${dir}/Containerfile" ] && echo "${dir}"
+                  done || true)
+            fi
+          else
+            # Schedule, manual run without input, or a push we can't diff
+            base=true
+            images=${all}
+          fi
+
+          images=$(printf '%s\n' ${images} | jq -R . | jq -sc 'map(select(length > 0))')
+          echo "base=${base}" >> "${GITHUB_OUTPUT}"
+          echo "images=${images}" >> "${GITHUB_OUTPUT}"
+          echo "Build baseutils: ${base}"
+          echo "Build images: ${images}"
+
+  baseutils:
+    needs: plan
+    if: needs.plan.outputs.base == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Free disk space
-        uses: endersonmenezes/free-disk-space@v3
-        with:
-          remove_tool_cache: true
-          remove_android: true
-          remove_dotnet: true
-          remove_haskell: true
-          remove_swap: true
-          remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox mono-complete"
-          remove_packages_one_command: true
-          rm_cmd: rmz
-
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: build oci image
-        uses: vmactions/freebsd-vm@v1.5.8
-        env:
-          AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          USERNAME: ${{ github.repository_owner }}
-          REGISTRY: ghcr.io
-          OS_VER: 16.0-CURRENT
-          IMAGE: ${{ inputs.image_name }}
+      - name: Build base and baseutils
+        uses: ./.github/actions/freebsd-build
         with:
-          usesh: true
-          #debug-on-error: true
-          #vnc-password: ${{ secrets.VNC_PASSWORD }}
-          envs: "AUTH_TOKEN USERNAME REGISTRY OS_VER IMAGE"
-          prepare: |
-            pkg install -y podman-suite
-            echo "${AUTH_TOKEN}" | buildah login ${REGISTRY} -u "${USERNAME}" --password-stdin
-          run: |
-            if [ -n "${IMAGE}" ]; then
-              ./make.sh -d -m "${IMAGE}"
-            else
-              ./make.sh -d
-            fi
+          args: -d -m baseutils
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  image:
+    name: ${{ matrix.image }}
+    needs: [ plan, baseutils ]
+    # Run even when baseutils was skipped, but not when it failed
+    if: >-
+      !cancelled() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.images != '[]' &&
+      needs.baseutils.result != 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.plan.outputs.images) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build ${{ matrix.image }}
+        uses: ./.github/actions/freebsd-build
+        with:
+          args: -B -m ${{ matrix.image }}
+          token: ${{ secrets.GITHUB_TOKEN }}

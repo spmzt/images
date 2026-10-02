@@ -1,0 +1,43 @@
+name: Build on FreeBSD
+description: Boot a FreeBSD VM, log in to the registry and run make.sh
+
+inputs:
+  args:
+    description: 'Arguments passed to make.sh'
+    required: true
+  token:
+    description: 'Token used to push to the registry'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Free disk space
+      uses: endersonmenezes/free-disk-space@v3
+      with:
+        remove_tool_cache: true
+        remove_android: true
+        remove_dotnet: true
+        remove_haskell: true
+        remove_swap: true
+        remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox mono-complete"
+        remove_packages_one_command: true
+        rm_cmd: rmz
+
+    - name: build oci image
+      uses: vmactions/freebsd-vm@v1.5.8
+      env:
+        AUTH_TOKEN: ${{ inputs.token }}
+        USERNAME: ${{ github.repository_owner }}
+        REGISTRY: ghcr.io
+        OS_VER: 16.0-CURRENT
+        MAKE_ARGS: ${{ inputs.args }}
+      with:
+        usesh: true
+        #debug-on-error: true
+        envs: "AUTH_TOKEN USERNAME REGISTRY OS_VER MAKE_ARGS"
+        prepare: |
+          pkg install -y podman-suite
+          echo "${AUTH_TOKEN}" | buildah login ${REGISTRY} -u "${USERNAME}" --password-stdin
+        run: |
+          ./make.sh ${MAKE_ARGS}

@@ -84,16 +84,18 @@ build_oci_image()
 
 main()
 {
-	local dflag iflag mflag pflag
+	local bflag dflag iflag mflag pflag
 
+	bflag=true
 	dflag=false
 	iflag=false
 	mflag=false
 	pflag=false
 
-	while getopts "dipt:m:" flag
+	while getopts "Bdipt:m:" flag
 	do
 		case $flag in
+		B) bflag=false ;;
 		d) dflag=true ;;
 		i) iflag=true ;;
 		p) pflag=true ;;
@@ -103,7 +105,8 @@ main()
 			IMAGE="$OPTARG"
 			;;
 		\?)
-			printf "Usage: %s: [-dip] [-t tag] [-m image]\n" $0
+			printf "Usage: %s: [-Bdip] [-t tag] [-m image]\n" $0
+			printf "\t-B: Skip loading and pushing the base image\n"
 			printf "\t-d: Download base image first\n"
 			printf "\t-i: Install dependencies\n"
 			printf "\t-p: Pull images first\n"
@@ -125,7 +128,9 @@ main()
 		install_depends
 	fi
 
-	build_base_image
+	if [ "$bflag" = true ]; then
+		build_base_image
+	fi
 	if [ "$mflag" = false ]; then
 		# baseutils first, since every other image is built on top of it
 		IMAGE="baseutils $(find . -mindepth 2 -maxdepth 2 -name Containerfile \
