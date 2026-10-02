@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: build oci image
-        uses: vmactions/freebsd-vm@v1.4.6
+        uses: vmactions/freebsd-vm@v1.5.8
         env:
           AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.repository_owner }}
