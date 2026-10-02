@@ -15,7 +15,7 @@ podman pull ghcr.io/spmzt/freebsd-baseutils:latest
 ## Python Image
 
 ```
-podman pull ghcr.io/spmzt/freebsd-py311:latest
+podman pull ghcr.io/spmzt/freebsd-py312:latest
 ```
 
 * NOTE: wheel, setuptools, cryptography are installed
@@ -49,3 +49,14 @@ or you can use freenginx image:
 podman pull ghcr.io/spmzt/freebsd-freenginx:latest
 ```
 
+* NOTE: Drop extra server blocks into `/usr/local/etc/nginx/conf.d/*.conf` (not available on freenginx)
+
+## PostgreSQL Image
+
+```
+podman run -d -e POSTGRES_PASSWORD=secret -p 5432:5432 \
+    -v pgdata:/var/db/postgres ghcr.io/spmzt/freebsd-postgres18:latest
+```
+
+* NOTE: The cluster is initialized in `$PGDATA` (`/var/db/postgres/data18`) on first start;
+  `POSTGRES_USER` (default `postgres`) sets the superuser name

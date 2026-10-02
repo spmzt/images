@@ -3,20 +3,33 @@ name: FreeBSD OCI Images
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
   schedule:
     # Weekly, Mondays at 03:00 UTC
     - cron: "0 3 * * 1"
   workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'Space-separated images to build (e.g., nginx node24); empty builds all'
+        required: false
+        type: string
   workflow_call:
     inputs:
       image_name:
-        description: 'Image name (e.g., base, python)'
-        required: true
+        description: 'Space-separated images to build (e.g., nginx node24); empty builds all'
+        required: false
         type: string
+
+concurrency:
+  group: oci-images
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
@@ -40,17 +53,21 @@ jobs:
         uses: vmactions/freebsd-vm@v1.4.6
         env:
           AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          USERNAME: ${{ github.actor }}
+          USERNAME: ${{ github.repository_owner }}
           REGISTRY: ghcr.io
           OS_VER: 16.0-CURRENT
+          IMAGE: ${{ inputs.image_name }}
         with:
           usesh: true
           #debug-on-error: true
           #vnc-password: ${{ secrets.VNC_PASSWORD }}
-          envs: "AUTH_TOKEN USERNAME REGISTRY OS_VER"
+          envs: "AUTH_TOKEN USERNAME REGISTRY OS_VER IMAGE"
           prepare: |
             pkg install -y podman-suite
-            echo "${AUTH_TOKEN}" | buildah login ${REGISTRY} -u ${AUTH_TOKEN} --password-stdin
+            echo "${AUTH_TOKEN}" | buildah login ${REGISTRY} -u "${USERNAME}" --password-stdin
           run: |
-            ./make.sh -dm baseutils
-            ./make.sh
+            if [ -n "${IMAGE}" ]; then
+              ./make.sh -d -m "${IMAGE}"
+            else
+              ./make.sh -d
+            fi

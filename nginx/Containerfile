@@ -1,10 +1,16 @@
 FROM ghcr.io/spmzt/freebsd-baseutils:latest
-LABEL org.opencontainers.image.source https://github.com/spmzt/images \
+LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
     org.opencontainers.image.title="FreeBSD nginx" \
     org.opencontainers.image.description="FreeBSD nginx image" \
     org.opencontainers.image.authors="spmzt"
 RUN pkg install -y nginx && \
-    pkg clean -ay
-RUN sed -i'' -e '$s|^\}$|    include /usr/local/etc/nginx/conf.d/*.conf;\n}|g' \
-    /usr/local/etc/nginx/nginx.conf
+    pkg clean -ay && \
+    rm -rf /var/db/pkg/repos/*
+RUN sed -i '' -e '$s|^\}$|    include /usr/local/etc/nginx/conf.d/*.conf;\n}|' \
+    /usr/local/etc/nginx/nginx.conf && \
+    mkdir -p /usr/local/etc/nginx/conf.d
+RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
+    ln -sf /dev/stderr /var/log/nginx/error.log
 EXPOSE 80
+STOPSIGNAL SIGQUIT
+CMD ["nginx", "-g", "daemon off;"]

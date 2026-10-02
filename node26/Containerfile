@@ -1,7 +1,8 @@
 FROM ghcr.io/spmzt/freebsd-baseutils:latest
-LABEL org.opencontainers.image.source https://github.com/spmzt/images \
+LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
     org.opencontainers.image.title="FreeBSD Node 26" \
     org.opencontainers.image.description="FreeBSD node 26 image" \
     org.opencontainers.image.authors="spmzt"
 RUN pkg install -y node26 npm-node26 && \
-    pkg clean -ay
+    pkg clean -ay && \
+    rm -rf /var/db/pkg/repos/*

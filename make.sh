@@ -14,21 +14,11 @@ OCI_IMAGE="${OS}-${OS_VER}-${ARCH}-container-image-${BASE_TYPE}.txz"
 OCI_IMAGE_URL="https://download.freebsd.org/snapshots/OCI-IMAGES/${OS_VER}/${ARCH}/Latest/${OCI_IMAGE}"
 IMAGE_PREFIX=${REGISTRY}/${USERNAME}/freebsd
 
-
-trap_exit()
-{
-}
-
-trap trap_exit EXIT
-
 fetch_base()
 {
 	printf "Download Latest FreeBSD OCI Image (%s)\n" ${BASE_TYPE}
-	if [ ! -s "${OCI_IMAGE}" ]; then
-		fetch ${OCI_IMAGE_URL}
-	else
-		printf "%s: exists!\n" "${OCI_IMAGE}"
-	fi
+	# Mirror mode: only re-download when the snapshot has changed
+	fetch -m ${OCI_IMAGE_URL}
 }
 
 install_depends()
@@ -44,6 +34,8 @@ build_base_image()
 	base_image=$(podman load --input ${OCI_IMAGE} | sed -e 's/Loaded image: //g')
 	buildah tag ${base_image} ${IMAGE_PREFIX}-base:${OCI_LABEL}
 	buildah tag ${base_image} ${IMAGE_PREFIX}-base:latest
+	buildah push ${IMAGE_PREFIX}-base:${OCI_LABEL}
+	buildah push ${IMAGE_PREFIX}-base:latest
 }
 
 pull_oci_image()
@@ -62,26 +54,40 @@ pull_oci_image()
 
 build_oci_image()
 {
-	local image_tag
+	local image_tag failed
 
-	# Pull it first for cache
+	failed=""
 	for img in $1;
 	do
 		image_tag=${IMAGE_PREFIX}-${img}
 		printf "Build: %s\n" $image_tag
-		buildah build -f ${img}/Containerfile ${BUDFLAGS} \
-		    -t ${image_tag}:latest -t ${image_tag}:${OCI_LABEL}
-		buildah push ${image_tag}:${OCI_LABEL} ${image_tag}:latest
+		if buildah build -f ${img}/Containerfile ${BUDFLAGS} \
+		    -t ${image_tag}:latest -t ${image_tag}:${OCI_LABEL} &&
+		    buildah push ${image_tag}:${OCI_LABEL} &&
+		    buildah push ${image_tag}:latest; then
+			continue
+		fi
+
+		printf "Failed: %s\n" $image_tag >&2
+		# Every other image is built on top of baseutils
+		if [ "$img" = baseutils ]; then
+			return 1
+		fi
+		failed="${failed} ${img}"
 	done
+
+	if [ -n "$failed" ]; then
+		printf "Failed images:%s\n" "$failed" >&2
+		return 1
+	fi
 }
 
 main()
 {
-	local dflag iflag tflag mflag pflag
+	local dflag iflag mflag pflag
 
 	dflag=false
 	iflag=false
-	tflag=false
 	mflag=false
 	pflag=false
 
@@ -91,10 +97,7 @@ main()
 		d) dflag=true ;;
 		i) iflag=true ;;
 		p) pflag=true ;;
-		t)
-			tflag=true
-			OCI_LABEL="$OPTARG"
-			;;
+		t) OCI_LABEL="$OPTARG" ;;
 		m)
 			mflag=true
 			IMAGE="$OPTARG"
@@ -104,6 +107,8 @@ main()
 			printf "\t-d: Download base image first\n"
 			printf "\t-i: Install dependencies\n"
 			printf "\t-p: Pull images first\n"
+			printf "\t-t: Tag to push alongside latest (default: today)\n"
+			printf "\t-m: Space-separated list of images to build (default: all)\n"
 			exit 2
 			;;
 		:)
@@ -122,7 +127,9 @@ main()
 
 	build_base_image
 	if [ "$mflag" = false ]; then
-		IMAGE="$(find . -name 'Containerfile' -printf '%h\n' | sed -e 's/\.\///g')"
+		# baseutils first, since every other image is built on top of it
+		IMAGE="baseutils $(find . -mindepth 2 -maxdepth 2 -name Containerfile \
+		    ! -path './baseutils/*' | cut -d/ -f2 | sort)"
 	fi
 
 	if [ "$pflag" = true ]; then

@@ -1,0 +1,9 @@
+FROM ghcr.io/spmzt/freebsd-baseutils:latest
+LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
+    org.opencontainers.image.title="FreeBSD Python 3.12" \
+    org.opencontainers.image.description="FreeBSD Python 3.12 image with pip, wheel, and setuptools" \
+    org.opencontainers.image.authors="spmzt"
+RUN pkg install -y py312-pip py312-setuptools \
+    py312-wheel py312-cryptography && \
+    pkg clean -ay && \
+    rm -rf /var/db/pkg/repos/*
