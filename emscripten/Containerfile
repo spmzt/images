@@ -1,0 +1,15 @@
+FROM ghcr.io/spmzt/freebsd-devel:latest
+LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
+    org.opencontainers.image.title="FreeBSD Emscripten" \
+    org.opencontainers.image.description="FreeBSD devel image with Emscripten, for C and C++ to WebAssembly" \
+    org.opencontainers.image.authors="spmzt"
+# Link a program once so the system libraries (libc, compiler-rt, malloc)
+# are already in root's cache, ~/.cache/emscripten, instead of being
+# compiled by every build.  -Wno-version-check: the package can expect
+# another LLVM major than the llvm-devel it depends on.
+RUN pkg install -y emscripten && \
+    pkg-cleanup && \
+    cd /tmp && \
+    printf 'int main(void) { return (0); }\n' > warm.c && \
+    emcc -O1 -Wno-version-check warm.c -o warm.js && \
+    rm -f warm.c warm.js warm.wasm

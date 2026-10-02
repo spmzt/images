@@ -1,0 +1,7 @@
+FROM ghcr.io/spmzt/freebsd-baseutils:latest
+LABEL org.opencontainers.image.source="https://github.com/spmzt/images" \
+    org.opencontainers.image.title="FreeBSD Devel" \
+    org.opencontainers.image.description="FreeBSD image with the base system's development set: clang, lld, bmake, kyua and every base library's headers" \
+    org.opencontainers.image.authors="spmzt"
+RUN pkg install -y FreeBSD-set-devel && \
+    pkg-cleanup

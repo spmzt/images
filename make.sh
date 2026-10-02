@@ -76,10 +76,10 @@ build_oci_image()
 		fi
 
 		printf "Failed: %s\n" $image_tag >&2
-		# Every other image is built on top of baseutils
-		if [ "$img" = baseutils ]; then
-			return 1
-		fi
+		# Every other image is built on top of baseutils or devel
+		case "$img" in
+		baseutils|devel) return 1 ;;
+		esac
 		failed="${failed} ${img}"
 	done
 
@@ -93,6 +93,7 @@ main()
 {
 	local bflag dflag iflag mflag pflag
 
+	IMAGE=""
 	bflag=true
 	dflag=false
 	iflag=false
@@ -109,7 +110,7 @@ main()
 		t) OCI_LABEL="$OPTARG" ;;
 		m)
 			mflag=true
-			IMAGE="$OPTARG"
+			IMAGE="${IMAGE:+${IMAGE} }$OPTARG"
 			;;
 		\?)
 			printf "Usage: %s: [-Bdip] [-t tag] [-m image]\n" $0
@@ -118,7 +119,7 @@ main()
 			printf "\t-i: Install dependencies\n"
 			printf "\t-p: Pull images first\n"
 			printf "\t-t: Tag to push alongside latest (default: today)\n"
-			printf "\t-m: Space-separated list of images to build (default: all)\n"
+			printf "\t-m: Images to build, space-separated or repeated (default: all)\n"
 			exit 2
 			;;
 		:)
@@ -139,9 +140,10 @@ main()
 		build_base_image
 	fi
 	if [ "$mflag" = false ]; then
-		# baseutils first, since every other image is built on top of it
-		IMAGE="baseutils $(find . -mindepth 2 -maxdepth 2 -name Containerfile \
-		    ! -path './baseutils/*' | cut -d/ -f2 | sort)"
+		# baseutils and devel first: every other image is built on them
+		IMAGE="baseutils devel $(find . -mindepth 2 -maxdepth 2 \
+		    -name Containerfile ! -path './baseutils/*' \
+		    ! -path './devel/*' | cut -d/ -f2 | sort)"
 	fi
 
 	if [ "$pflag" = true ]; then

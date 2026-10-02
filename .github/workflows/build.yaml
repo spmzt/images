@@ -49,8 +49,9 @@ jobs:
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
         run: |
+          # baseutils and devel are built first, by their own job
           all=$(find . -mindepth 2 -maxdepth 2 -name Containerfile \
-              ! -path './baseutils/*' | cut -d/ -f2 | sort)
+              ! -path './baseutils/*' ! -path './devel/*' | cut -d/ -f2 | sort)
 
           if [ -n "${INPUT_IMAGES}" ]; then
             base=false
@@ -60,7 +61,7 @@ jobs:
                 echo "::error::Unknown image: ${img}"
                 exit 1
               fi
-              if [ "${img}" = baseutils ]; then
+              if [ "${img}" = baseutils ] || [ "${img}" = devel ]; then
                 base=true
               else
                 images="${images} ${img}"
@@ -70,7 +71,7 @@ jobs:
             changed=$(git diff --name-only "${BEFORE}" "${AFTER}")
             echo "Changed files:"
             echo "${changed}"
-            if echo "${changed}" | grep -qE '^(make\.sh|\.github/|baseutils/)'; then
+            if echo "${changed}" | grep -qE '^(make\.sh|\.github/|baseutils/|devel/)'; then
               base=true
               images=${all}
             else
@@ -90,7 +91,7 @@ jobs:
           echo "base=${base}" >> "${GITHUB_OUTPUT}"
           echo "day=$(date -u +%F)" >> "${GITHUB_OUTPUT}"
           echo "images=${images}" >> "${GITHUB_OUTPUT}"
-          echo "Build baseutils: ${base}"
+          echo "Build baseutils and devel: ${base}"
           echo "Build images: ${images}"
 
   baseutils:
@@ -105,10 +106,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Build base and baseutils
+      - name: Build base, baseutils and devel
         uses: ./.github/actions/freebsd-build
         with:
-          args: -d -m baseutils
+          args: -d -m baseutils -m devel
           token: ${{ secrets.GITHUB_TOKEN }}
           cache-name: baseutils
           cache-day: ${{ needs.plan.outputs.day }}

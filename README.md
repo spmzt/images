@@ -12,6 +12,26 @@ podman pull ghcr.io/spmzt/freebsd-baseutils:latest
 
 * NOTE: I'm using notoolchain version which is big in size but contains most of the tools I usually need
 
+## Devel Image
+
+```
+podman pull ghcr.io/spmzt/freebsd-devel:latest
+```
+
+* NOTE: `FreeBSD-set-devel` on baseutils: clang, lld, bmake, kyua and the
+  headers of every base library
+
+## Emscripten Image
+
+```
+podman pull ghcr.io/spmzt/freebsd-emscripten:latest
+```
+
+* NOTE: Built on the devel image; root's cache (`~/.cache/emscripten`)
+  already holds the system libraries a C program links with
+* NOTE: Pass `-Wno-version-check` along with `-Werror`: the emscripten
+  package can expect another LLVM major than the `llvm-devel` it installs
+
 ## Python Image
 
 ```
